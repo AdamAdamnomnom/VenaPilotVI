@@ -2,10 +2,14 @@
 
 Instrukcja odtworzenia maszyny kioskowej **od zera**: instalator Debiana → pakiety → pliki konfiguracyjne → autostart → weryfikacja.
 
+Produkcja: **Fujitsu Futro S930**, Debian 13, aplikacja **`VenaKioskv1_2.py`**.  
+Architektura i zasady: [`README.md`](README.md), [`ARCHITECTURE.md`](ARCHITECTURE.md). Diagnoza: [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md).
+
 
 | Założenie   | Wartość                                                  |
 | ----------- | -------------------------------------------------------- |
 | OS          | Debian 12 (Bookworm) lub nowszy — **nie Ubuntu Desktop** |
+| Sprzęt      | Fujitsu Futro S930 (thin client); geometria UI 1024×768  |
 | Wyświetlacz | **1024×768** (tak jest zakodowane w aplikacji)           |
 | Sesja       | **X11** + **Openbox** (Wayland = nie działa)             |
 | Użytkownik  | `kiosk` (bez uprawnień root na co dzień)                 |
@@ -40,7 +44,7 @@ Instrukcja odtworzenia maszyny kioskowej **od zera**: instalator Debiana → pak
 
 ## 1. Instalator Debiana (krok po kroku)
 
-Przygotuj: pendrive z **debian-*-netinst.iso** (amd64), docelowy komputer/Casio.
+Przygotuj: pendrive z **debian-*-netinst.iso** (amd64), docelowy komputer (produkcja: **Fujitsu Futro S930**).
 
 ### 1.1 Boot
 
@@ -510,7 +514,7 @@ amixer sget Master
 amixer scontrols
 ```
 
-VENA woła: `amixer -q sset Master <N>%`. Jeśli na Twojej karcie kanał to nie `Master`, trzeba zmienić `channel` w kodzie (`HardwareAudioMixer`) albo ustawić alias ALSA — na większości laptopów/Casio `Master` działa.
+VENA woła: `amixer -q sset Master <N>%`. Jeśli na Twojej karcie kanał to nie `Master`, trzeba zmienić `channel` w kodzie (`HardwareAudioMixer`) albo ustawić alias ALSA — na większości kart (w tym Futro) `Master` działa.
 
 ---
 
@@ -594,7 +598,8 @@ Potrzebujesz co najmniej:
 
 | Plik                                        | Wymagany       |
 | ------------------------------------------- | -------------- |
-| `VenaKioskv1_1.py` (lub `VenaKioskv1_0.py`) | tak            |
+| `VenaKioskv1_2.py`                          | tak            |
+| `vena-watchdog.sh`                          | tak (autostart)|
 | `requirements.txt`                          | tylko przy pip |
 
 
@@ -604,21 +609,24 @@ Przykłady wgrania:
 
 ```bash
 # z pendrive
-cp /media/kiosk/*/VenaKioskv1_1.py /home/kiosk/vena/
+cp /media/kiosk/*/VenaKioskv1_2.py /home/kiosk/vena/
+cp /media/kiosk/*/vena-watchdog.sh /home/kiosk/vena/
 
 # albo scp z innego PC
-scp VenaKioskv1_1.py kiosk@vena-kiosk:/home/kiosk/vena/
+scp VenaKioskv1_2.py vena-watchdog.sh kiosk@vena-kiosk:/home/kiosk/vena/
 ```
 
 Struktura po pierwszym uruchomieniu:
 
 ```
 /home/kiosk/vena/
-├── VenaKioskv1_1.py
+├── VenaKioskv1_2.py
+├── vena-watchdog.sh
 ├── data/
 │   ├── spotify_profile/    # sesja Spotify (login przeżywa reboot)
 │   └── youtube_profile/    # sesja YouTube
 └── logs/
+    ├── vena.log            # log aplikacji
     └── chromium.log        # diagnostyka crashy Chromium
 ```
 
@@ -682,7 +690,7 @@ Na działającym X + Openbox (albo po `startx`):
 
 ```bash
 cd /home/kiosk/vena
-python3 VenaKioskv1_1.py
+python3 VenaKioskv1_2.py
 ```
 
 Oczekiwane:
@@ -719,7 +727,7 @@ Po reboocie maszyny odznacz po kolei:
 
 ## 14. Tryb serwisowy
 
-W MENU (lub z sidebara): **7×** klik w napis **VENA PILOT V** → PIN `1234`:
+W **MENU**: **7×** klik w etykietę wersji **`Vena Pilot V v1.2`** (nie w napis na sidebarze) → PIN `1234`:
 
 
 | Akcja                           | Skutek                                |
@@ -737,6 +745,8 @@ PIN jest na sztywno w kodzie (`DEV_PIN = "1234"`) — zmień przed produkcją je
 
 ## 15. Diagnostyka
 
+Szersza lista objawów (v1.2, w tym ryzyka długiego uptime): [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md).
+
 
 | Objaw                                   | Gdzie patrzeć                                                                          |
 | --------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -746,7 +756,7 @@ PIN jest na sztywno w kodzie (`DEV_PIN = "1234"`) — zmień przed produkcją je
 | Brak okna / złe pozycjonowanie          | Openbox + reguły `VenaSpotify` / `VenaYouTube`; czy jest X11 (`echo $DISPLAY`)         |
 | Wi‑Fi puste                             | `systemctl status NetworkManager`, grupa `netdev`, `nmcli device wifi list`            |
 | RESET pyta o hasło                      | `/etc/sudoers.d/kiosk-reboot`, `sudo -n reboot`                                        |
-| Czarny ekran po boot                    | autologin tty1, `~/.bash_profile` + `startx`, logi X: `~/.local/share/xorg/Xorg.0.log` |
+| Czarny ekran po boot / VENA nie wstaje  | autologin, `startx`, `logs/vena_stdout.log`, `logs/vena.log`, Xorg.0.log                |
 
 
 Flagi Chromium (już w kodzie, nie trzeba ustawiać ręcznie):  
@@ -768,7 +778,7 @@ Flagi Chromium (już w kodzie, nie trzeba ustawiać ręcznie):
 | `/etc/systemd/system/getty@tty1.service.d/autologin.conf` | **utwórz** — autologin                            |
 | `/home/kiosk/.bash_profile` (lub `.profile`)              | **utwórz/dopisz** — `startx` na tty1              |
 | `/home/kiosk/.xinitrc`                                    | **utwórz** — Pulse + Openbox                      |
-| `/home/kiosk/.config/openbox/rc.xml`                      | **skopiuj + edytuj** — margines 168, reguły okien |
+| `/home/kiosk/.config/openbox/rc.xml`                      | **skopiuj + edytuj** — margines **0**, reguły okien |
 | `/home/kiosk/.config/openbox/autostart`                   | **utwórz** — start `vena-watchdog.sh`             |
 | `/etc/sudoers.d/kiosk-reboot`                             | **utwórz** — NOPASSWD reboot                      |
 | `/home/kiosk/vena/vena-watchdog.sh`                       | **skopiuj** — pętla restartu UI                   |
@@ -784,7 +794,11 @@ Flagi Chromium (już w kodzie, nie trzeba ustawiać ręcznie):
 | ---------------------------------------- | ------------------------------------ |
 | `/home/kiosk/vena/data/spotify_profile/` | Sesja Spotify                        |
 | `/home/kiosk/vena/data/youtube_profile/` | Sesja YouTube                        |
-| `/home/kiosk/vena/logs/chromium.log`     | Log Chromium (rotacja ~5 MiB w v1.1) |
+| `/home/kiosk/vena/data/no_autorestart`   | Stop watchdoga (wyjście serwisowe)   |
+| `/home/kiosk/vena/data/restore_networking` | Włącz sieć po poprzednim poweroff |
+| `/home/kiosk/vena/logs/vena.log`         | Log aplikacji                        |
+| `/home/kiosk/vena/logs/chromium.log`     | Log Chromium (rotacja ~5 MiB przy starcie procesu) |
+| `/home/kiosk/vena/logs/vena_stdout.log`  | stdout VENA z `vena-watchdog.sh`     |
 
 
 

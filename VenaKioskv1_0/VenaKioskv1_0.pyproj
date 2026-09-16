@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>57786489-b103-427b-86ae-a4dfcfee3b5f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>VenaKioskv1_0.py</StartupFile>
+    <StartupFile>VenaKioskv1_2.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -21,7 +21,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="VenaKioskv1_0.py" />
+    <Compile Include="VenaKioskv1_2.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

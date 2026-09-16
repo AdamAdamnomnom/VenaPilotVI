@@ -1,4 +1,8 @@
-# Analiza błędów — VENA Kiosk
+# Analiza błędów — VENA Kiosk (archiwum v1.1)
+
+**Dokument historyczny (2026-07-27).** Dotyczy `VenaKioskv1_1.py`, nie aktualnej produkcji.
+
+Aktualna aplikacja: `VenaKioskv1_2.py`. Aktualne ryzyka i diagnoza: [`TROUBLESHOOTING.md`](../../TROUBLESHOOTING.md). Stary kod: [`archive/legacy/`](../../archive/legacy/README.md).
 
 Przegląd kodu (2026-07-27). **`VenaKioskv1_1.py`** = gałąź z łatami niezawodności;
 `VenaKioskv1_0.py` = poprzedni baseline bez tych zmian.
